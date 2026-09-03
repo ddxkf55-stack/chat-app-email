@@ -1,332 +1,249 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>منصة دردشة متقدمة</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة دردشة متقدمة</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
-  <!-- شاشة المصادقة -->
-  <div id="auth-screen" class="screen active">
-    <div class="auth-container">
-      <div class="auth-box" id="login-box">
-        <div class="auth-header">
-          <div class="logo">
-            <i class="fas fa-comments"></i>
-          </div>
-          <h1>تسجيل الدخول</h1>
-          <p class="subtitle">مرحباً بك في منصة الدردشة</p>
-        </div>
-        <form onsubmit="handleLogin(event)">
-          <div class="input-group">
-            <i class="fas fa-user"></i>
-            <input type="text" id="login-username" placeholder="اسم المستخدم" required>
-          </div>
-          <div class="input-group">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="login-password" placeholder="كلمة المرور" required>
-          </div>
-          <button type="submit" class="btn-primary">
-            <i class="fas fa-sign-in-alt"></i>
-            دخول
-          </button>
-        </form>
-        <div class="auth-footer">
-          <p>ليس لديك حساب؟ <a href="#" onclick="toggleAuth()">إنشاء حساب جديد</a></p>
-        </div>
-      </div>
-
-      <div class="auth-box" id="register-box" style="display:none;">
-        <div class="auth-header">
-          <div class="logo">
-            <i class="fas fa-user-plus"></i>
-          </div>
-          <h1>إنشاء حساب</h1>
-          <p class="subtitle">انضم إلينا الآن</p>
-        </div>
-        <form onsubmit="handleRegister(event)">
-          <div class="input-group">
-            <i class="fas fa-user"></i>
-            <input type="text" id="reg-username" placeholder="اسم المستخدم" required>
-          </div>
-          <div class="input-group">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="reg-password" placeholder="كلمة المرور" required>
-          </div>
-          <button type="submit" class="btn-primary">
-            <i class="fas fa-user-check"></i>
-            إنشاء الحساب
-          </button>
-        </form>
-        <div class="auth-footer">
-          <p>لديك حساب بالفعل؟ <a href="#" onclick="toggleAuth()">تسجيل الدخول</a></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- شاشة التطبيق الرئيسية -->
-  <div id="app-screen" class="screen">
-    <!-- الشريط الجانبي -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <div class="user-profile" onclick="openProfile()">
-          <div class="avatar-wrapper">
-            <img id="current-user-pic" src="" alt="Profile">
-            <span class="status-indicator online"></span>
-          </div>
-          <div class="user-info">
-            <h3 id="current-user-name">User</h3>
-            <span class="status-text">متصل الآن</span>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button class="icon-btn" onclick="openAddFriend()" title="إضافة صديق">
-            <i class="fas fa-user-plus"></i>
-          </button>
-          <button class="icon-btn" onclick="logout()" title="تسجيل الخروج">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="search-container">
-        <div class="search-box">
-          <i class="fas fa-search"></i>
-          <input type="text" placeholder="بحث في المحادثات..." id="search-input">
-        </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('chats')">
-          <i class="fas fa-comments"></i>
-          <span>المحادثات</span>
-        </button>
-        <button class="tab-btn" onclick="switchTab('contacts')">
-          <i class="fas fa-address-book"></i>
-          <span>جهات الاتصال</span>
-        </button>
-      </div>
-
-      <div id="friends-list" class="friends-list">
-        <!-- سيتم ملؤها ديناميكياً -->
-      </div>
-    </div>
-
-    <!-- منطقة الدردشة -->
-    <div class="chat-area">
-      <!-- رأس الدردشة -->
-      <div class="chat-header" id="chat-header">
-        <div class="chat-header-content">
-          <div class="avatar-wrapper">
-            <img id="chat-friend-pic" src="" alt="Friend">
-            <span class="status-indicator online"></span>
-          </div>
-          <div class="chat-info">
-            <h3 id="chat-friend-name">اختر محادثة</h3>
-            <span class="last-seen" id="chat-status">متصل</span>
-          </div>
-        </div>
-        <div class="chat-actions">
-          <button class="action-btn" onclick="startVoiceCall()" title="مكالمة صوتية">
-            <i class="fas fa-phone-alt"></i>
-          </button>
-          <button class="action-btn" title="مكالمة فيديو">
-            <i class="fas fa-video"></i>
-          </button>
-          <button class="action-btn" title="المزيد">
-            <i class="fas fa-ellipsis-v"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- منطقة الرسائل -->
-      <div class="messages-container" id="messages-container">
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">
-            <i class="fas fa-comments"></i>
-          </div>
-          <h3>مرحباً بك في الدردشة</h3>
-          <p>اختر محادثة من القائمة لبدء الحديث</p>
-          <div class="quick-actions">
-            <button class="btn-secondary" onclick="openAddFriend()">
-              <i class="fas fa-user-plus"></i>
-              إضافة صديق
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- منطقة الإدخال -->
-      <div class="chat-input-area" id="chat-input">
-        <div class="input-container">
-          <button class="attach-btn" onclick="document.getElementById('file-upload').click()" title="إرفاق ملف">
-            <i class="fas fa-paperclip"></i>
-          </button>
-          <input type="file" id="file-upload" hidden onchange="handleFileUpload(this)">
-          
-          <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." autocomplete="off">
-          
-          <button class="emoji-btn" title="إيموجي">
-            <i class="far fa-smile"></i>
-          </button>
-          
-          <button class="send-btn" onclick="sendMessage()" title="إرسال">
-            <i class="fas fa-paper-plane"></i>
-          </button>
-        </div>
-        <div class="input-hint">
-          <span>اضغط Enter للإرسال</span>
-          <span class="file-info" id="file-info" style="display:none;">
-            <i class="fas fa-file"></i>
-            <span id="file-name"></span>
-            <button onclick="clearFile()" class="clear-file-btn"><i class="fas fa-times"></i></button>
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- نافذة الملف الشخصي -->
-  <div id="profile-modal" class="modal">
-    <div class="modal-overlay" onclick="closeModal('profile-modal')"></div>
-    <div class="modal-content profile-modal">
-      <button class="close-btn" onclick="closeModal('profile-modal')">
-        <i class="fas fa-times"></i>
-      </button>
-      
-      <div class="profile-header-bg" id="bg-preview"></div>
-      
-      <div class="profile-avatar-section">
-        <div class="avatar-large-wrapper">
-          <img id="profile-pic-preview" src="" alt="Profile">
-          <label for="new-profile-pic" class="avatar-edit-btn">
-            <i class="fas fa-camera"></i>
-          </label>
-        </div>
-        <h2 id="profile-username-display"></h2>
-        <p class="temp-email" id="temp-email-display"></p>
-      </div>
-
-      <div class="profile-sections">
-        <div class="section">
-          <h4><i class="fas fa-info-circle"></i> المعلومات الشخصية</h4>
-          <div class="form-group">
-            <label>نبذة عنك</label>
-            <textarea id="new-bio" placeholder="اكتب نبذة عنك..." rows="3"></textarea>
-          </div>
-        </div>
-
-        <div class="section">
-          <h4><i class="fas fa-palette"></i> تخصيص المظهر</h4>
-          <div class="form-group">
-            <label>صورة الخلفية</label>
-            <div class="file-input-wrapper">
-              <input type="file" id="new-bg-pic" accept="image/*" hidden>
-              <button class="btn-secondary" onclick="document.getElementById('new-bg-pic').click()">
-                <i class="fas fa-image"></i>
-                اختر صورة
-              </button>
+    <!-- شاشة المصادقة -->
+    <div id="auth-screen" class="screen active">
+        <div class="auth-container">
+            <div class="auth-box" id="login-box">
+                <div class="auth-header">
+                    <div class="logo"><i class="fas fa-comments"></i></div>
+                    <h1>تسجيل الدخول</h1>
+                    <p class="subtitle">مرحباً بك في منصة الدردشة</p>
+                </div>
+                <form onsubmit="handleLogin(event)">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="login-username" placeholder="اسم المستخدم" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="login-password" placeholder="كلمة المرور" required>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> دخول
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>ليس لديك حساب؟ <a href="#" onclick="toggleAuth()">إنشاء حساب جديد</a></p>
+                </div>
             </div>
-          </div>
-        </div>
 
-        <div class="section">
-          <h4><i class="fas fa-envelope"></i> البريد المؤقت</h4>
-          <div class="catchmail-box">
-            <p>بريدك المؤقت:</p>
-            <code id="catchmail-email"></code>
-            <button class="btn-primary" onclick="checkCatchmail()">
-              <i class="fas fa-sync-alt"></i>
-              فحص الرسائل
-            </button>
-          </div>
-          <div id="catchmail-messages" class="messages-list"></div>
+            <div class="auth-box" id="register-box" style="display:none;">
+                <div class="auth-header">
+                    <div class="logo"><i class="fas fa-user-plus"></i></div>
+                    <h1>إنشاء حساب</h1>
+                    <p class="subtitle">انضم إلينا الآن</p>
+                </div>
+                <form onsubmit="handleRegister(event)">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="reg-username" placeholder="اسم المستخدم" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="reg-password" placeholder="كلمة المرور" required>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-user-check"></i> إنشاء الحساب
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>لديك حساب بالفعل؟ <a href="#" onclick="toggleAuth()">تسجيل الدخول</a></p>
+                </div>
+            </div>
         </div>
-
-        <button class="btn-primary save-btn" onclick="updateProfile()">
-          <i class="fas fa-save"></i>
-          حفظ التغييرات
-        </button>
-      </div>
     </div>
-  </div>
 
-  <!-- نافذة إضافة صديق -->
-  <div id="add-friend-modal" class="modal">
-    <div class="modal-overlay" onclick="closeModal('add-friend-modal')"></div>
-    <div class="modal-content small-modal">
-      <button class="close-btn" onclick="closeModal('add-friend-modal')">
-        <i class="fas fa-times"></i>
-      </button>
-      
-      <div class="modal-header">
-        <div class="modal-icon">
-          <i class="fas fa-user-plus"></i>
+    <!-- شاشة التطبيق الرئيسية -->
+    <div id="app-screen" class="screen">
+        <!-- الشريط الجانبي -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-profile" onclick="openProfile()">
+                    <div class="avatar-wrapper">
+                        <img id="current-user-pic" src="" alt="Profile">
+                        <span class="status-indicator online"></span>
+                    </div>
+                    <div class="user-info">
+                        <h3 id="current-user-name">User</h3>
+                        <span class="status-text">متصل الآن</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="openAddFriend()" title="إضافة صديق"><i class="fas fa-user-plus"></i></button>
+                    <button class="icon-btn" onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="بحث في المحادثات..." id="search-input">
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('chats')"><i class="fas fa-comments"></i><span>المحادثات</span></button>
+                <button class="tab-btn" onclick="switchTab('contacts')"><i class="fas fa-address-book"></i><span>جهات الاتصال</span></button>
+            </div>
+            <div id="friends-list" class="friends-list"></div>
         </div>
-        <h2>إضافة صديق جديد</h2>
-        <p>أدخل اسم المستخدم أو البريد المؤقت</p>
-      </div>
 
-      <form onsubmit="handleAddFriend(event)">
-        <div class="input-group">
-          <i class="fas fa-search"></i>
-          <input type="text" id="friend-identifier" placeholder="اسم المستخدم أو البريد الإلكتروني" required>
+        <!-- منطقة الدردشة -->
+        <div class="chat-area">
+            <div class="chat-header" id="chat-header">
+                <div class="chat-header-content">
+                    <div class="avatar-wrapper">
+                        <img id="chat-friend-pic" src="" alt="Friend">
+                        <span class="status-indicator online"></span>
+                    </div>
+                    <div class="chat-info">
+                        <h3 id="chat-friend-name">اختر محادثة</h3>
+                        <span class="last-seen" id="chat-status">متصل</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="action-btn" onclick="startVoiceCall()" title="مكالمة صوتية"><i class="fas fa-phone-alt"></i></button>
+                    <button class="action-btn" title="مكالمة فيديو"><i class="fas fa-video"></i></button>
+                    <button class="action-btn" title="المزيد"><i class="fas fa-ellipsis-v"></i></button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messages-container">
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon"><i class="fas fa-comments"></i></div>
+                    <h3>مرحباً بك في الدردشة</h3>
+                    <p>اختر محادثة من القائمة لبدء الحديث</p>
+                    <div class="quick-actions">
+                        <button class="btn-secondary" onclick="openAddFriend()"><i class="fas fa-user-plus"></i> إضافة صديق</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area" id="chat-input">
+                <div class="input-container">
+                    <button class="attach-btn" onclick="document.getElementById('file-upload').click()" title="إرفاق ملف"><i class="fas fa-paperclip"></i></button>
+                    <input type="file" id="file-upload" hidden onchange="handleFileUpload(this)">
+                    <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." autocomplete="off">
+                    <button class="emoji-btn" title="إيموجي"><i class="far fa-smile"></i></button>
+                    <button class="send-btn" onclick="sendMessage()" title="إرسال"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div class="input-hint">
+                    <span>اضغط Enter للإرسال</span>
+                    <span class="file-info" id="file-info" style="display:none;">
+                        <i class="fas fa-file"></i>
+                        <span id="file-name"></span>
+                        <button onclick="clearFile()" class="clear-file-btn"><i class="fas fa-times"></i></button>
+                    </span>
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn-primary full-width">
-          <i class="fas fa-plus"></i>
-          إضافة صديق
-        </button>
-      </form>
     </div>
-  </div>
 
-  <!-- نافذة المكالمة الصوتية -->
-  <div id="call-modal" class="modal">
-    <div class="modal-content call-modal">
-      <div class="call-header">
-        <button class="close-btn" onclick="endCall()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="call-content">
-        <div class="call-animation">
-          <div class="pulse-ring"></div>
-          <div class="pulse-ring delay-1"></div>
-          <div class="pulse-ring delay-2"></div>
-          <img id="call-avatar" src="" alt="Caller">
+    <!-- نافذة الملف الشخصي -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-overlay" onclick="closeModal('profile-modal')"></div>
+        <div class="modal-content profile-modal">
+            <button class="close-btn" onclick="closeModal('profile-modal')"><i class="fas fa-times"></i></button>
+            <div class="profile-header-bg" id="bg-preview"></div>
+            <div class="profile-avatar-section">
+                <div class="avatar-large-wrapper">
+                    <img id="profile-pic-preview" src="" alt="Profile">
+                    <label for="new-profile-pic" class="avatar-edit-btn"><i class="fas fa-camera"></i></label>
+                </div>
+                <h2 id="profile-username-display"></h2>
+                <p class="temp-email" id="temp-email-display"></p>
+            </div>
+            <div class="profile-sections">
+                <div class="section">
+                    <h4><i class="fas fa-info-circle"></i> المعلومات الشخصية</h4>
+                    <div class="form-group">
+                        <label>نبذة عنك</label>
+                        <textarea id="new-bio" placeholder="اكتب نبذة عنك..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="section">
+                    <h4><i class="fas fa-palette"></i> تخصيص المظهر</h4>
+                    <div class="form-group">
+                        <label>صورة الخلفية</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="new-bg-pic" accept="image/*" hidden>
+                            <button class="btn-secondary" onclick="document.getElementById('new-bg-pic').click()"><i class="fas fa-image"></i> اختر صورة</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h4><i class="fas fa-envelope"></i> البريد المؤقت</h4>
+                    <div class="catchmail-box">
+                        <p>بريدك المؤقت:</p>
+                        <code id="catchmail-email"></code>
+                        <button class="btn-primary" onclick="checkCatchmail()"><i class="fas fa-sync-alt"></i> فحص الرسائل</button>
+                    </div>
+                    <div id="catchmail-messages" class="messages-list"></div>
+                </div>
+                <button class="btn-primary save-btn" onclick="updateProfile()"><i class="fas fa-save"></i> حفظ التغييرات</button>
+            </div>
         </div>
-        
-        <h2 id="call-name">اسم المتصل</h2>
-        <p id="call-status" class="call-status-text">جاري الاتصال...</p>
-        
-        <div class="call-timer" id="call-timer" style="display:none;">
-          <i class="fas fa-clock"></i>
-          <span>00:00</span>
-        </div>
-      </div>
-
-      <div class="call-controls">
-        <button class="control-btn mute-btn" onclick="toggleMute()">
-          <i class="fas fa-microphone"></i>
-        </button>
-        <button class="control-btn end-call-btn" onclick="endCall()">
-          <i class="fas fa-phone-slash"></i>
-        </button>
-        <button class="control-btn speaker-btn" onclick="toggleSpeaker()">
-          <i class="fas fa-volume-up"></i>
-        </button>
-      </div>
     </div>
-  </div>
 
-  <!-- Toast Notifications -->
-  <div id="toast-container"></div>
+    <!-- نافذة إضافة صديق -->
+    <div id="add-friend-modal" class="modal">
+        <div class="modal-overlay" onclick="closeModal('add-friend-modal')"></div>
+        <div class="modal-content small-modal">
+            <button class="close-btn" onclick="closeModal('add-friend-modal')"><i class="fas fa-times"></i></button>
+            <div class="modal-header">
+                <div class="modal-icon"><i class="fas fa-user-plus"></i></div>
+                <h2>إضافة صديق جديد</h2>
+                <p>أدخل اسم المستخدم أو البريد المؤقت</p>
+            </div>
+            <form onsubmit="handleAddFriend(event)">
+                <div class="input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="friend-identifier" placeholder="اسم المستخدم أو البريد الإلكتروني" required>
+                </div>
+                <button type="submit" class="btn-primary full-width"><i class="fas fa-plus"></i> إضافة صديق</button>
+            </form>
+        </div>
+    </div>
 
-  <script src="app.js"></script>
+    <!-- نافذة المكالمة الصوتية -->
+    <div id="call-modal" class="modal">
+        <div class="modal-content call-modal">
+            <div class="call-header">
+                <button class="close-btn" onclick="endCall()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="call-content">
+                <div class="call-animation">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring delay-1"></div>
+                    <div class="pulse-ring delay-2"></div>
+                    <img id="call-avatar" src="" alt="Caller">
+                </div>
+                <h2 id="call-name">اسم المتصل</h2>
+                <p id="call-status" class="call-status-text">جاري الاتصال...</p>
+                <div class="call-timer" id="call-timer" style="display:none;">
+                    <i class="fas fa-clock"></i>
+                    <span>00:00</span>
+                </div>
+            </div>
+            <div class="call-controls">
+                <button class="control-btn mute-btn" onclick="toggleMute()"><i class="fas fa-microphone"></i></button>
+                <button class="control-btn end-call-btn" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
+                <button class="control-btn speaker-btn" onclick="toggleSpeaker()"><i class="fas fa-volume-up"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="app.js"></script>
 </body>
 </html>
